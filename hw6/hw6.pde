@@ -22,7 +22,6 @@ class Game{
     }
 
     void play(){
-
     }
 }
 
@@ -55,12 +54,12 @@ class Grid{
 }
 
 abstract class Cell{
-    float x,y;
+    int x,y;
     float cellSize;
 
     Cell(int x, int y, float cellSize){
-        this.x=x*cellSize;
-        this.y=y*cellSize;
+        this.x=x;
+        this.y=y;
         this.cellSize= cellSize;
     }
     abstract void draw();
@@ -78,7 +77,7 @@ class LiveCell extends Cell{
 
     void draw(){
         fill(0);
-        rect(this.x,this.y,this.cellSize,this.cellSize);
+        rect(super.x*super.cellSize,super.y*super.cellSize,super.cellSize,super.cellSize);
     }
 
 }
@@ -92,7 +91,7 @@ class DeadCell extends Cell{
     }
     void draw(){
         fill(0,255,0);
-        rect(this.x,this.y,this.cellSize,this.cellSize);
+        rect(super.x*super.cellSize,super.y*super.cellSize,super.cellSize,super.cellSize);
     }
 
 }
