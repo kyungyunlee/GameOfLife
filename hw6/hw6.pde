@@ -28,12 +28,28 @@ class Game{
 
 
 class Grid{
+    int width_cellNum = 20;
+    float cellSize = width/width_cellNum;
+    int height_cellNum = height/cellSize;
+
     Cell [][] cells;
 
     Grid(){
-
+        for (int j=0; j<height_cellNum;j++){
+            for(int i=0; i<width_cellNum;i++){
+                cells[i][j] = new Cell(i*cellSize, j*cellSize, cellSize);
+            }
+        }
     }
     void draw(){
+        for (int j=0; j<height_cellNum;j++){
+            for(int i=0; i<width_cellNum;i++){
+                cells[i][j].draw();
+            }
+        }
+    }
+
+    void checkAlive(){
 
     }
 }
