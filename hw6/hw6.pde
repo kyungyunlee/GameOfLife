@@ -30,14 +30,14 @@ class Game{
 class Grid{
     int width_cellNum = 20;
     float cellSize = width/width_cellNum;
-    int height_cellNum = height/cellSize;
+    int height_cellNum = int(height/cellSize);
 
     Cell [][] cells;
 
     Grid(){
         for (int j=0; j<height_cellNum;j++){
             for(int i=0; i<width_cellNum;i++){
-                cells[i][j] = new Cell(i*cellSize, j*cellSize, cellSize);
+                cells[i][j] = new DeadCell(i, j, cellSize);
             }
         }
     }
@@ -55,15 +55,13 @@ class Grid{
 }
 
 abstract class Cell{
-    int x,y;
+    float x,y;
     float cellSize;
 
-
     Cell(int x, int y, float cellSize){
-        this.x=x;
-        this.y=y;
+        this.x=x*cellSize;
+        this.y=y*cellSize;
         this.cellSize= cellSize;
-
     }
     abstract void draw();
 
@@ -71,10 +69,11 @@ abstract class Cell{
 
 
 class LiveCell extends Cell{
-    int x,y;
-    float cellSize;
+    boolean isAlive;
+    
     LiveCell(int x, int y, float cellSize){
         super(x,y,cellSize);
+        isAlive = true;
     }
 
     void draw(){
@@ -85,12 +84,11 @@ class LiveCell extends Cell{
 }
 
 class DeadCell extends Cell{
-    int x,y;
-    float cellSize;
-    boolean isAlive =false;
+    boolean isAlive;
 
     DeadCell(int x, int y, float cellSize){
         super(x,y,cellSize);
+        isAlive = false;
     }
     void draw(){
         fill(0,255,0);
