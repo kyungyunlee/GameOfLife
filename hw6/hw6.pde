@@ -27,21 +27,40 @@ class Game{
     //originalGrid contains old info
     //updatingGrid is the one that is drawn
     Grid originalGrid, updatingGrid;
+    int startTime, currentTime;
+    int refreshRate=100;
+    int countDays=0;
 
     Game(){
+        startTime = millis();
         originalGrid = new Grid();
         updatingGrid = new Grid();
     }
 
     void play(){
+        currentTime = millis();
+
         // originalGrid = updatingGrid;
 
-        // //refresh
-        // updatingGrid = this.updated();
+        if(timeToRefresh()){
 
-        updatingGrid.update();
+            //update grid
+                // updatingGrid = this.updated();
+            countDays++;
+        }
+
         updatingGrid.draw();
+        fill(255);
+        text("Days : " + countDays, 10, height-10);
 
+    }
+
+    boolean timeToRefresh(){
+        if((currentTime-startTime)>refreshRate){
+            startTime = currentTime;
+            return true;
+        }
+        return false;
     }
 
     Grid updated(){
