@@ -49,10 +49,7 @@ class Cell{
         this.cellSize= cellSize;
 
     }
-    void draw(){
-        fill(0);
-        rect(this.x,this.y,this.cellSize,this.cellSize);
-    }
+    abstract void draw();
 
 }
 
