@@ -38,7 +38,7 @@ class Grid{
     }
 }
 
-class Cell{
+abstract class Cell{
     int x,y;
     float cellSize;
 
