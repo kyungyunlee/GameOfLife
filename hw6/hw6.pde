@@ -1,8 +1,12 @@
-// import ketai.ui.*;
-// import ketai.sensors.*;
+import ketai.ui.*;
+import ketai.sensors.*;
 
-// KetaiGesture gesture;
-
+KetaiGesture gesture;
+ float zoom = 1;
+ float cellSize = 50; 
+ int leftright =0;
+  int updown=0;
+  
 Game game;
 
 void setup(){
@@ -16,6 +20,13 @@ void draw(){
     game.play();
 }
 
+void onPinch(float x, float y, float d)
+{  //println("pinched");
+  if(d>0){ zoom = map(d,0,width,1,10);}
+  else if (d<=0) { zoom = map(d,-width,0,0.1,1);}
+  cellSize = 50*zoom;
+  
+}
 
 void mousePressed(){
  //selecting cells
@@ -54,6 +65,15 @@ class Game{
         text("Days : " + countDays, 10, height-10);
 
     }
+  
+    void zoomInOut(){
+
+    pushMatrix();
+    translate(leftright, updown); // Hyungjong help me... T.T -inah
+    scale(zoom);
+    updatingGrid.draw();
+    popMatrix();
+    }
 
     boolean timeToRefresh(){
         if((currentTime-startTime)>refreshRate){
@@ -74,8 +94,9 @@ class Game{
 
 
 class Grid{
-    int width_cellNum = 20;
-    float cellSize = width/width_cellNum;
+    //int width_cellNum = 20;
+    int width_cellNum = int(width/cellSize) ;
+    //float cellSize = width/width_cellNum;
     int height_cellNum = int(height/cellSize);
 
     Cell [][] cells;
