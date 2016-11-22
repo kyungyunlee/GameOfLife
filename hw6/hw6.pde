@@ -2,7 +2,7 @@ import ketai.ui.*;
 import ketai.sensors.*;
 
 KetaiGesture gesture;
- float zoom = 1;
+
  float cellSize = 50; 
  int leftright =0;
   int updown=0;
@@ -22,9 +22,10 @@ void draw(){
 
 void onPinch(float x, float y, float d)
 {  //println("pinched");
-  if(d>0){ zoom = map(d,0,width,1,10);}
-  else if (d<=0) { zoom = map(d,-width,0,0.1,1);}
-  cellSize = 50*zoom;
+  float zoom = 1; 
+  if(d>0){ zoom = map(d,0,width,cellSize,cellSize*10);}
+  else if (d<=0) { zoom = map(d,-width,0,cellSize*0.1,cellSize);}
+  game.zoomInOut(zoom);
   
 }
 
@@ -66,13 +67,9 @@ class Game{
 
     }
   
-    void zoomInOut(){
-
-    pushMatrix();
-    translate(leftright, updown); // Hyungjong help me... T.T -inah
-    scale(zoom);
-    updatingGrid.draw();
-    popMatrix();
+    void zoomInOut(float zoom){
+      cellSize = zoom;
+      originalGrid = new Grid();
     }
 
     boolean timeToRefresh(){
