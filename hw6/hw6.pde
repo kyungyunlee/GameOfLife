@@ -37,7 +37,11 @@ void mousePressed() {
       for (int j=0; j<game.originalGrid.height_cellNum; j++) {
         if (game.originalGrid.cells[i][j].isSelected(mouseX, mouseY)) {
           float cellSize = game.originalGrid.cells[i][j].cellSize;
-          game.originalGrid.cells[i][j] = new LiveCell(i*cellSize, j*cellSize, cellSize);
+          if (game.originalGrid.cells[i][j].isAlive()) {
+            game.originalGrid.cells[i][j] = new LiveCell(i*cellSize, j*cellSize, cellSize);
+          } else {
+            game.originalGrid.cells[i][j] = new DeadCell(i*cellSize, j*cellSize, cellSize);
+          }
         }
       }
     }
