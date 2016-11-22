@@ -4,7 +4,12 @@ import android.view.MotionEvent;
 
 KetaiGesture gesture;
 
-enum Mode 
+int TouchEvents;
+float xTouch[];
+float yTouch[];
+int currentPointerId=0;
+
+enum Mode
 {
   EDIT, START
 };
@@ -15,6 +20,9 @@ void setup() {
   fullScreen();
   gesture = new KetaiGesture(this);
   game = new Game();
+
+  xTouch = new float[10];
+  yTouch = new float[10];
 }
 
 void draw() {
@@ -24,20 +32,32 @@ void draw() {
 
 void onPinch(float x, float y, float d)
 {  //println("pinched");
-  float cellSize = 0; 
-  if(d>0){ cellSize = map(d,0,width, game.originalGrid.cellSize, game.originalGrid.cellSize*2);}
-  else if (d<=0) { cellSize = map(d,-width,0, 0, game.originalGrid.cellSize);}
+  float cellSize = 0;
+  if(d>10){ cellSize = map(d,0,width, game.originalGrid.cellSize, game.originalGrid.cellSize*2);}
+  else if (d<=-10) { cellSize = map(d,-width,0, 0, game.originalGrid.cellSize);}
   game.zoomInOut(cellSize);
 
 }
+// void onDoubleTap(float x, float y){
+//     if(game.mode == Mode.EDIT){
+//         for (int i=0; i<game.originalGrid.width_cellNum-1; i++) {
+//               for (int j=0; j<game.originalGrid.height_cellNum-1; j++) {
+//                 if (game.originalGrid.cells[i][j].isSelected(mouseX, mouseY)) {
+//                       float cellSize = game.originalGrid.cells[i][j].cellSize;
+//                         game.originalGrid.cells[i][j] = new CancerCell(i*cellSize, j*cellSize, cellSize);
+//                         game.originalGrid.cells[i+1][j] = new CancerCell((i+1)*cellSize, j*cellSize, cellSize);
+//                     }
+//                 }}
+//     }
+// }
 
-void mousePressed() {
+void onTap(float x, float y){
   if (game.mode == Mode.EDIT) {
     for (int i=0; i<game.originalGrid.width_cellNum; i++) {
       for (int j=0; j<game.originalGrid.height_cellNum; j++) {
         if (game.originalGrid.cells[i][j].isSelected(mouseX, mouseY)) {
           float cellSize = game.originalGrid.cells[i][j].cellSize;
-          if (game.originalGrid.cells[i][j].isAlive()) {
+          if (!game.originalGrid.cells[i][j].isAlive()) {
             game.originalGrid.cells[i][j] = new LiveCell(i*cellSize, j*cellSize, cellSize);
           } else {
             game.originalGrid.cells[i][j] = new DeadCell(i*cellSize, j*cellSize, cellSize);
@@ -49,7 +69,7 @@ void mousePressed() {
 }
 
 void keyPressed() {
-  switch (key) 
+  switch (key)
   {
     case 'e' :
       if (game.mode == Mode.EDIT) game.mode = Mode.START;
@@ -74,20 +94,20 @@ class Game {
     refreshRate = 100;
     mode = Mode.EDIT;
   }
-  
-  
-  
+
+
+
   void play() {
     if (mode == Mode.EDIT) {
       currentTime = 0;
       originalGrid.draw(mode);
     } else {
       currentTime = millis();
-      originalGrid.draw(mode);       
+      originalGrid.draw(mode);
       if (timeToRefresh()) {
         countDays++;
         updatingGrid = new Grid(originalGrid);
-        updatingGrid.update(); 
+        updatingGrid.update();
         originalGrid = new Grid(updatingGrid);
       }
     }
@@ -256,10 +276,11 @@ class Grid {
         cells[i][j].liveNeighbor = countLiveCell;
       }
     }
-    
+
     for (int i=0; i<width_cellNum; i++) {
       for (int j=0; j<height_cellNum; j++) {
     //check if the cell is liveCell or deadCell
+
         if (cells[i][j].isAlive()) {
           cells[i][j].liveNeighbor -=1; //remove one for liveCell because added self while counting surrounding cells
           println(cells[i][j].liveNeighbor);
@@ -315,7 +336,7 @@ abstract class Cell {
     this.cellSize= cellSize;
     liveNeighbor = 0;
   }
-  
+
   Cell (Cell other) {
     x=other.x;
     y=other.y;
@@ -345,7 +366,7 @@ class LiveCell extends Cell {
     super(x, y, cellSize);
     super.isAlive = true;
   }
-  
+
   LiveCell(LiveCell other) {
     super(other);
   }
@@ -363,11 +384,11 @@ class DeadCell extends Cell {
     super(x, y, cellSize);
     super.isAlive = false;
   }
-  
+
   DeadCell(DeadCell other) {
     super(other);
   }
-  
+
   void draw() {
     fill(0);
     noStroke();
@@ -375,10 +396,55 @@ class DeadCell extends Cell {
   }
 }
 
-public boolean surfaceTouchEvent(MotionEvent event) {
-  //Call this to keep mouseX and mouseY updated
-  super.surfaceTouchEvent(event);
- 
-  //Forward the event to the class for processing
-  return gesture.surfaceTouchEvent(event);
+
+
+
+// public boolean surfaceTouchEvent(MotionEvent event) {
+//   //Call this to keep mouseX and mouseY updated
+//   super.surfaceTouchEvent(event);
+
+//   //Forward the event to the class for processing
+//   return gesture.surfaceTouchEvent(event);
+// }
+
+
+public boolean surfaceTouchEvent(MotionEvent event){
+    // if (true){
+        super.surfaceTouchEvent(event);
+
+    // }
+
+
+    // TouchEvents = event.getPointerCount();
+    // for (int i=0; i<TouchEvents;i++){
+    //     int pointerId = event.getPointerId(i);
+    //     xTouch[pointerId] = event.getX(i);
+    //     yTouch[pointerId] = event.getY(i);
+    //     float siz = event.getSize(i);
+    // }
+
+    if(event.getActionMasked() == 5 && event.getActionIndex()==4){
+        print("Secondary pointer detected: ACTION_POINTER_DOWN");
+        print("Action index: " +str(event.getActionIndex()));
+        if (game.mode == Mode.EDIT ) {
+            game.mode = Mode.START;
+        }
+        else if (game.mode == Mode.START){
+            game.mode = Mode.EDIT;
+        }
+        // return true;
+        return super.surfaceTouchEvent(event);
+    }
+
+
+
+    // else{
+
+    // }
+
+    return gesture.surfaceTouchEvent(event);
+
+
 }
+
+
