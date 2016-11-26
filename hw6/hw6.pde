@@ -7,6 +7,12 @@ KetaiGesture gesture;
 int TouchEvents;
 float xTouch[];
 float yTouch[];
+
+float accelerometerX;
+float accelerometerY;
+float accelerometerZ;
+float cellSize = 0;
+
 int currentPointerId=0;
 
 enum Mode
@@ -32,7 +38,7 @@ void draw() {
 
 void onPinch(float x, float y, float d)
 {  //println("pinched");
-  float cellSize = 0;
+  //float cellSize = 0;
   if(d>10){ cellSize = map(d,0,width, game.originalGrid.cellSize, game.originalGrid.cellSize*2);}
   else if (d<=-10) { cellSize = map(d,-width,0, 0, game.originalGrid.cellSize);}
   game.zoomInOut(cellSize);
@@ -76,6 +82,20 @@ void keyPressed() {
       else if (game.mode == Mode.START) game.mode = Mode.EDIT;
   }
 }
+void onAcclerometerEvent(float x, float y, float z)
+{
+int shakeThreshold = 3;
+accelerometerX = x;
+accelerometerY = y;
+accelerometerZ = z;
+
+if ( x>shakeThreshold || y>shakeThreshold || z>shakeThreshold )
+{
+  game.reset(cellSize);
+}
+}  
+
+
 
 class Game {
   //originalGrid contains old info
@@ -118,7 +138,11 @@ class Game {
   void zoomInOut(float cellSize){
       originalGrid = new Grid(cellSize);
     }
-
+  
+  void reset(float cellSize){
+    originalGrid = new Grid(cellSize);
+  
+  }
   boolean timeToRefresh() {
     if ((currentTime-startTime)>refreshRate) {
       startTime = currentTime;
@@ -361,7 +385,8 @@ abstract class Cell {
 
 
 class LiveCell extends Cell {
-
+  color ranCol;
+  
   LiveCell(float x, float y, float cellSize) {
     super(x, y, cellSize);
     super.isAlive = true;
@@ -372,7 +397,8 @@ class LiveCell extends Cell {
   }
 
   void draw() {
-    fill(0, 255, 0);
+    ranCol = color(random(0,255),random(0,255),random(0,255));
+    fill(0,  ranCol, 0);
     noStroke();
     rect(super.x, super.y, super.cellSize, super.cellSize);
   }
@@ -446,5 +472,3 @@ public boolean surfaceTouchEvent(MotionEvent event){
 
 
 }
-
-
