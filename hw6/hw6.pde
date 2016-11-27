@@ -1,8 +1,5 @@
-//import ketai.ui.*;
-//import ketai.sensors.*;
-import android.view.MotionEvent;
 
-//KetaiGesture gesture;
+import android.view.MotionEvent;
 
 int touch_i;
 int touch_j;
@@ -18,6 +15,8 @@ float accelerometerZ;
 float cellSize = 0;
 
 int currentPointerId=0;
+
+int countDays=0;
 
 enum Mode
 {
@@ -41,45 +40,6 @@ void draw() {
   game.play();
 }
 
-/*void onPinch(float x, float y, float d)
-{  //println("pinched");
-  //float cellSize = 0;
-  if (d>10) { 
-    cellSize = map(d, 0, width, game.originalGrid.cellSize, game.originalGrid.cellSize*2);
-  } else if (d<=-10) { 
-    cellSize = map(d, -width, 0, 0, game.originalGrid.cellSize);
-  }
-  game.zoomInOut(cellSize);
-}
-// void onDoubleTap(float x, float y){
-//     if(game.mode == Mode.EDIT){
-//         for (int i=0; i<game.originalGrid.width_cellNum-1; i++) {
-//               for (int j=0; j<game.originalGrid.height_cellNum-1; j++) {
-//                 if (game.originalGrid.cells[i][j].isSelected(mouseX, mouseY)) {
-//                       float cellSize = game.originalGrid.cells[i][j].cellSize;
-//                         game.originalGrid.cells[i][j] = new CancerCell(i*cellSize, j*cellSize, cellSize);
-//                         game.originalGrid.cells[i+1][j] = new CancerCell((i+1)*cellSize, j*cellSize, cellSize);
-//                     }
-//                 }}
-//     }
-// }
-
-void onTap(float x, float y) {
-  if (game.mode == Mode.EDIT) {
-    for (int i=0; i<game.originalGrid.width_cellNum; i++) {
-      for (int j=0; j<game.originalGrid.height_cellNum; j++) {
-        if (game.originalGrid.cells[i][j].isSelected(mouseX, mouseY)) {
-          float cellSize = game.originalGrid.cells[i][j].cellSize;
-          if (!game.originalGrid.cells[i][j].isAlive()) {
-            game.originalGrid.cells[i][j] = new LiveCell(i*cellSize, j*cellSize, cellSize);
-          } else {
-            game.originalGrid.cells[i][j] = new DeadCell(i*cellSize, j*cellSize, cellSize);
-          }
-        }
-      }
-    }
-  }
-}*/
 void mousePressed() {
   cellColor = color(random(0, 255), random(0, 255), random(0, 255));
 }
@@ -105,7 +65,7 @@ void mouseDragged() {
           } else {
             break;
           }
-          
+
         }
       }
     }
@@ -120,19 +80,6 @@ void keyPressed() {
     else if (game.mode == Mode.START) game.mode = Mode.EDIT;
   }
 }
-/*void onAcclerometerEvent(float x, float y, float z)
-{
-  int shakeThreshold = 3;
-  accelerometerX = x;
-  accelerometerY = y;
-  accelerometerZ = z;
-
-  if ( x>shakeThreshold || y>shakeThreshold || z>shakeThreshold )
-  {
-    game.reset(cellSize);
-  }
-}  */
-
 
 
 class Game {
@@ -141,7 +88,7 @@ class Game {
   Grid originalGrid, updatingGrid;
   int startTime, currentTime;
   int refreshRate;
-  int countDays;
+  // int countDays;
   Mode mode;
 
   Game() {
@@ -180,6 +127,7 @@ class Game {
   void reset(float cellSize) {
     originalGrid = new Grid(cellSize);
   }
+  
   boolean timeToRefresh() {
     if ((currentTime-startTime)>refreshRate) {
       startTime = currentTime;
@@ -460,31 +408,7 @@ class DeadCell extends Cell {
 }
 
 
-
-
-// public boolean surfaceTouchEvent(MotionEvent event) {
-//   //Call this to keep mouseX and mouseY updated
-//   super.surfaceTouchEvent(event);
-
-//   //Forward the event to the class for processing
-//   return gesture.surfaceTouchEvent(event);
-// }
-
-
-/*public boolean surfaceTouchEvent(MotionEvent event) {
-  // if (true){
-  super.surfaceTouchEvent(event);
-
-  // }
-
-
-  // TouchEvents = event.getPointerCount();
-  // for (int i=0; i<TouchEvents;i++){
-  //     int pointerId = event.getPointerId(i);
-  //     xTouch[pointerId] = event.getX(i);
-  //     yTouch[pointerId] = event.getY(i);
-  //     float siz = event.getSize(i);
-  // }
+public boolean surfaceTouchEvent(MotionEvent event) {
 
   if (event.getActionMasked() == 5 && event.getActionIndex()==4) {
     print("Secondary pointer detected: ACTION_POINTER_DOWN");
@@ -493,16 +417,10 @@ class DeadCell extends Cell {
       game.mode = Mode.START;
     } else if (game.mode == Mode.START) {
       game.mode = Mode.EDIT;
+      
     }
-    // return true;
-    return super.surfaceTouchEvent(event);
   }
 
 
-
-  // else{
-
-  // }
-
-  return gesture.surfaceTouchEvent(event);
-}*/
+  return super.surfaceTouchEvent(event);
+}
