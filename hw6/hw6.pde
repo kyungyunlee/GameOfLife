@@ -24,7 +24,7 @@ Game game;
 
 void setup() {
   fullScreen();
-  gesture = new KetaiGesture(this);
+  //gesture = new KetaiGesture(this);
   game = new Game();
 
   xTouch = new float[10];
@@ -36,13 +36,15 @@ void draw() {
   game.play();
 }
 
-void onPinch(float x, float y, float d)
+/*void onPinch(float x, float y, float d)
 {  //println("pinched");
   //float cellSize = 0;
-  if(d>10){ cellSize = map(d,0,width, game.originalGrid.cellSize, game.originalGrid.cellSize*2);}
-  else if (d<=-10) { cellSize = map(d,-width,0, 0, game.originalGrid.cellSize);}
+  if (d>10) { 
+    cellSize = map(d, 0, width, game.originalGrid.cellSize, game.originalGrid.cellSize*2);
+  } else if (d<=-10) { 
+    cellSize = map(d, -width, 0, 0, game.originalGrid.cellSize);
+  }
   game.zoomInOut(cellSize);
-
 }
 // void onDoubleTap(float x, float y){
 //     if(game.mode == Mode.EDIT){
@@ -57,7 +59,24 @@ void onPinch(float x, float y, float d)
 //     }
 // }
 
-void onTap(float x, float y){
+void onTap(float x, float y) {
+  if (game.mode == Mode.EDIT) {
+    for (int i=0; i<game.originalGrid.width_cellNum; i++) {
+      for (int j=0; j<game.originalGrid.height_cellNum; j++) {
+        if (game.originalGrid.cells[i][j].isSelected(mouseX, mouseY)) {
+          float cellSize = game.originalGrid.cells[i][j].cellSize;
+          if (!game.originalGrid.cells[i][j].isAlive()) {
+            game.originalGrid.cells[i][j] = new LiveCell(i*cellSize, j*cellSize, cellSize);
+          } else {
+            game.originalGrid.cells[i][j] = new DeadCell(i*cellSize, j*cellSize, cellSize);
+          }
+        }
+      }
+    }
+  }
+}*/
+
+void mouseDragged() {
   if (game.mode == Mode.EDIT) {
     for (int i=0; i<game.originalGrid.width_cellNum; i++) {
       for (int j=0; j<game.originalGrid.height_cellNum; j++) {
@@ -77,23 +96,23 @@ void onTap(float x, float y){
 void keyPressed() {
   switch (key)
   {
-    case 'e' :
-      if (game.mode == Mode.EDIT) game.mode = Mode.START;
-      else if (game.mode == Mode.START) game.mode = Mode.EDIT;
+  case 'e' :
+    if (game.mode == Mode.EDIT) game.mode = Mode.START;
+    else if (game.mode == Mode.START) game.mode = Mode.EDIT;
   }
 }
-void onAcclerometerEvent(float x, float y, float z)
+/*void onAcclerometerEvent(float x, float y, float z)
 {
-int shakeThreshold = 3;
-accelerometerX = x;
-accelerometerY = y;
-accelerometerZ = z;
+  int shakeThreshold = 3;
+  accelerometerX = x;
+  accelerometerY = y;
+  accelerometerZ = z;
 
-if ( x>shakeThreshold || y>shakeThreshold || z>shakeThreshold )
-{
-  game.reset(cellSize);
-}
-}  
+  if ( x>shakeThreshold || y>shakeThreshold || z>shakeThreshold )
+  {
+    game.reset(cellSize);
+  }
+}  */
 
 
 
@@ -135,13 +154,12 @@ class Game {
     text("Days : " + countDays, 10, height-10);
   }
 
-  void zoomInOut(float cellSize){
-      originalGrid = new Grid(cellSize);
-    }
-  
-  void reset(float cellSize){
+  void zoomInOut(float cellSize) {
     originalGrid = new Grid(cellSize);
-  
+  }
+
+  void reset(float cellSize) {
+    originalGrid = new Grid(cellSize);
   }
   boolean timeToRefresh() {
     if ((currentTime-startTime)>refreshRate) {
@@ -303,7 +321,7 @@ class Grid {
 
     for (int i=0; i<width_cellNum; i++) {
       for (int j=0; j<height_cellNum; j++) {
-    //check if the cell is liveCell or deadCell
+        //check if the cell is liveCell or deadCell
 
         if (cells[i][j].isAlive()) {
           cells[i][j].liveNeighbor -=1; //remove one for liveCell because added self while counting surrounding cells
@@ -386,7 +404,7 @@ abstract class Cell {
 
 class LiveCell extends Cell {
   color ranCol;
-  
+
   LiveCell(float x, float y, float cellSize) {
     super(x, y, cellSize);
     super.isAlive = true;
@@ -397,8 +415,8 @@ class LiveCell extends Cell {
   }
 
   void draw() {
-    ranCol = color(random(0,255),random(0,255),random(0,255));
-    fill(0,  ranCol, 0);
+    //ranCol = color(random(0, 255), random(0, 255), random(0, 255));
+    fill(0, 0, 225);
     noStroke();
     rect(super.x, super.y, super.cellSize, super.cellSize);
   }
@@ -434,41 +452,38 @@ class DeadCell extends Cell {
 // }
 
 
-public boolean surfaceTouchEvent(MotionEvent event){
-    // if (true){
-        super.surfaceTouchEvent(event);
+public boolean surfaceTouchEvent(MotionEvent event) {
+  // if (true){
+  super.surfaceTouchEvent(event);
 
-    // }
+  // }
 
 
-    // TouchEvents = event.getPointerCount();
-    // for (int i=0; i<TouchEvents;i++){
-    //     int pointerId = event.getPointerId(i);
-    //     xTouch[pointerId] = event.getX(i);
-    //     yTouch[pointerId] = event.getY(i);
-    //     float siz = event.getSize(i);
-    // }
+  // TouchEvents = event.getPointerCount();
+  // for (int i=0; i<TouchEvents;i++){
+  //     int pointerId = event.getPointerId(i);
+  //     xTouch[pointerId] = event.getX(i);
+  //     yTouch[pointerId] = event.getY(i);
+  //     float siz = event.getSize(i);
+  // }
 
-    if(event.getActionMasked() == 5 && event.getActionIndex()==4){
-        print("Secondary pointer detected: ACTION_POINTER_DOWN");
-        print("Action index: " +str(event.getActionIndex()));
-        if (game.mode == Mode.EDIT ) {
-            game.mode = Mode.START;
-        }
-        else if (game.mode == Mode.START){
-            game.mode = Mode.EDIT;
-        }
-        // return true;
-        return super.surfaceTouchEvent(event);
+  if (event.getActionMasked() == 5 && event.getActionIndex()==4) {
+    print("Secondary pointer detected: ACTION_POINTER_DOWN");
+    print("Action index: " +str(event.getActionIndex()));
+    if (game.mode == Mode.EDIT ) {
+      game.mode = Mode.START;
+    } else if (game.mode == Mode.START) {
+      game.mode = Mode.EDIT;
     }
+    // return true;
+    return super.surfaceTouchEvent(event);
+  }
 
 
 
-    // else{
+  // else{
 
-    // }
+  // }
 
-    return gesture.surfaceTouchEvent(event);
-
-
+  return gesture.surfaceTouchEvent(event);
 }
