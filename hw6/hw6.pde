@@ -1,8 +1,12 @@
-import ketai.ui.*;
-import ketai.sensors.*;
+//import ketai.ui.*;
+//import ketai.sensors.*;
 import android.view.MotionEvent;
 
-KetaiGesture gesture;
+//KetaiGesture gesture;
+
+int touch_i;
+int touch_j;
+color cellColor;
 
 int TouchEvents;
 float xTouch[];
@@ -26,7 +30,8 @@ void setup() {
   fullScreen();
   //gesture = new KetaiGesture(this);
   game = new Game();
-
+  touch_i =-1;
+  touch_j =-1;
   xTouch = new float[10];
   yTouch = new float[10];
 }
@@ -75,18 +80,32 @@ void onTap(float x, float y) {
     }
   }
 }*/
+void mousePressed() {
+  cellColor = color(random(0, 255), random(0, 255), random(0, 255));
+}
 
 void mouseDragged() {
   if (game.mode == Mode.EDIT) {
     for (int i=0; i<game.originalGrid.width_cellNum; i++) {
       for (int j=0; j<game.originalGrid.height_cellNum; j++) {
         if (game.originalGrid.cells[i][j].isSelected(mouseX, mouseY)) {
-          float cellSize = game.originalGrid.cells[i][j].cellSize;
-          if (!game.originalGrid.cells[i][j].isAlive()) {
-            game.originalGrid.cells[i][j] = new LiveCell(i*cellSize, j*cellSize, cellSize);
+          if (touch_i != i || touch_j != j) {
+            float cellSize = game.originalGrid.cells[i][j].cellSize;
+            if (!game.originalGrid.cells[i][j].isAlive()) {
+              game.originalGrid.cells[i][j] = new LiveCell(i*cellSize, j*cellSize, cellSize);
+              touch_i = i;
+              touch_j = j;
+              break;
+            } else {
+              game.originalGrid.cells[i][j] = new DeadCell(i*cellSize, j*cellSize, cellSize);
+              touch_i = i;
+              touch_j = j;
+              break;
+            }
           } else {
-            game.originalGrid.cells[i][j] = new DeadCell(i*cellSize, j*cellSize, cellSize);
+            break;
           }
+          
         }
       }
     }
@@ -452,7 +471,7 @@ class DeadCell extends Cell {
 // }
 
 
-public boolean surfaceTouchEvent(MotionEvent event) {
+/*public boolean surfaceTouchEvent(MotionEvent event) {
   // if (true){
   super.surfaceTouchEvent(event);
 
@@ -486,4 +505,4 @@ public boolean surfaceTouchEvent(MotionEvent event) {
   // }
 
   return gesture.surfaceTouchEvent(event);
-}
+}*/
