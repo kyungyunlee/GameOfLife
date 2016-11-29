@@ -1,31 +1,35 @@
+import ketai.ui.*;
+import ketai.sensors.*;
 
 import android.view.MotionEvent;
 
-import android.app.Activity;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
+/*import android.app.Activity;
+ //import android.content.Context;
+ import android.hardware.Sensor;
+ import android.hardware.SensorManager;
+ import android.hardware.SensorEvent;
+ import android.hardware.SensorEventListener;*/
+
+
 import android.os.Bundle;
 
-
+KetaiGesture gesture;
+KetaiSensor sensor;
 
 int touch_i;
 int touch_j;
 color cellColor;
 
-int TouchEvents;
-float xTouch[];
-float yTouch[];
+long lastTime;
+long currentTime;
+long gabOfTime;
+float lastX;
+float lastY;
+float lastZ;
+float speed;
+static final int SHAKE_THRESHOLD = 800;
 
-float accelerometerX;
-float accelerometerY;
-float accelerometerZ;
-float cellSize = 0;
-
-int currentPointerId=0;
-
-int countDays=0;
+boolean mousedragged;
 
 enum Mode
 {
@@ -38,10 +42,12 @@ void setup() {
   fullScreen();
   //gesture = new KetaiGesture(this);
   game = new Game();
+  gesture = new KetaiGesture(this);
+  sensor = new KetaiSensor(this);
+  sensor.start();
+
   touch_i =-1;
   touch_j =-1;
-  xTouch = new float[10];
-  yTouch = new float[10];
 }
 
 void draw() {
@@ -54,6 +60,7 @@ void mousePressed() {
 }
 
 void mouseDragged() {
+  if (!mousedragged) return;
   if (game.mode == Mode.EDIT) {
     for (int i=0; i<game.originalGrid.width_cellNum; i++) {
       for (int j=0; j<game.originalGrid.height_cellNum; j++) {
@@ -61,7 +68,7 @@ void mouseDragged() {
           if (touch_i != i || touch_j != j) {
             float cellSize = game.originalGrid.cells[i][j].cellSize;
             if (!game.originalGrid.cells[i][j].isAlive()) {
-              game.originalGrid.cells[i][j] = new LiveCell(i*cellSize, j*cellSize, cellSize);
+              game.originalGrid.cells[i][j] = new LiveCell(i*cellSize, j*cellSize, cellSize, cellColor);
               touch_i = i;
               touch_j = j;
               break;
@@ -74,22 +81,23 @@ void mouseDragged() {
           } else {
             break;
           }
-
         }
       }
     }
   }
 }
 
-void keyPressed() {
-  switch (key)
-  {
-  case 'e' :
-    if (game.mode == Mode.EDIT) game.mode = Mode.START;
-    else if (game.mode == Mode.START) game.mode = Mode.EDIT;
+void onPinch(float x, float y, float d)
+{  
+  float cellSize = 0;
+  if (d>10) { 
+    cellSize = map(d, 0, width, game.originalGrid.cellSize, game.originalGrid.cellSize*2);
+    game.zoomInOut(cellSize);
+  } else if (d<=-10) { 
+    cellSize = map(d, -width, 0, 0, game.originalGrid.cellSize);
+    game.zoomInOut(cellSize);
   }
 }
-
 
 class Game {
   //originalGrid contains old info
@@ -97,7 +105,7 @@ class Game {
   Grid originalGrid, updatingGrid;
   int startTime, currentTime;
   int refreshRate;
-  // int countDays;
+  int countDays;
   Mode mode;
 
   Game() {
@@ -108,8 +116,6 @@ class Game {
     refreshRate = 100;
     mode = Mode.EDIT;
   }
-
-
 
   void play() {
     if (mode == Mode.EDIT) {
@@ -130,13 +136,15 @@ class Game {
   }
 
   void zoomInOut(float cellSize) {
+    countDays = 0;
     originalGrid = new Grid(cellSize);
   }
 
-  void reset(float cellSize) {
-    originalGrid = new Grid(cellSize);
+  void reset() {
+    countDays = 0;
+    originalGrid = new Grid(originalGrid.cellSize);
   }
-  
+
   boolean timeToRefresh() {
     if ((currentTime-startTime)>refreshRate) {
       startTime = currentTime;
@@ -188,14 +196,23 @@ class Grid {
     for (int i=0; i<width_cellNum; i++) {
       for (int j=0; j<height_cellNum; j++) {
         int countLiveCell = 0;
-
+        color col = cells[i][j].col;
         //first check surrounding cells and count liveCell
         try {
           for (int a=-1; a<2; a++) {
             for (int b=-1; b<2; b++) {
               if (cells[i+a][j+b].isAlive()) {
+                if (cells[i][j].isAlive()) {
+                  col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                } else {
+                  if (red(col)+green(col)+blue(col) == 0) {
+                    col = cells[i+a][j+b].col;
+                  } else {
+                    col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                  }
+                }
                 countLiveCell++;
-                println("count "+i+" "+j+"&"+i+a+" "+j+b);
+                //println("count "+i+" "+j+"&"+i+a+" "+j+b);
               }
             }
           }
@@ -207,8 +224,17 @@ class Grid {
             for (int a=0; a<2; a++) {
               for (int b=0; b<2; b++) {
                 if (cells[i+a][j+b].isAlive()) {
+                  if (cells[i][j].isAlive()) {
+                    col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                  } else {
+                    if (red(col)+green(col)+blue(col) == 0) {
+                      col = cells[i+a][j+b].col;
+                    } else {
+                      col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                    }
+                  }
                   countLiveCell++;
-                  println("count "+i+" "+j+"&"+i+a+" "+j+b);
+                  //println("count "+i+" "+j+"&"+i+a+" "+j+b);
                 }
               }
             }
@@ -218,8 +244,17 @@ class Grid {
             for (int a=-1; a<1; a++) {
               for (int b=0; b<2; b++) {
                 if (cells[i+a][j+b].isAlive()) {
+                  if (cells[i][j].isAlive()) {
+                    col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                  } else {
+                    if (red(col)+green(col)+blue(col) == 0) {
+                      col = cells[i+a][j+b].col;
+                    } else {
+                      col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                    }
+                  }
                   countLiveCell++;
-                  println("count "+i+" "+j+"&"+i+a+" "+j+b);
+                  //println("count "+i+" "+j+"&"+i+a+" "+j+b);
                 }
               }
             }
@@ -229,8 +264,17 @@ class Grid {
             for (int a=0; a<2; a++) {
               for (int b=-1; b<0; b++) {
                 if (cells[i+a][j+b].isAlive()) {
+                  if (cells[i][j].isAlive()) {
+                    col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                  } else {
+                    if (red(col)+green(col)+blue(col) == 0) {
+                      col = cells[i+a][j+b].col;
+                    } else {
+                      col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                    }
+                  }
                   countLiveCell++;
-                  println("count "+i+" "+j+"&"+i+a+" "+j+b);
+                  //println("count "+i+" "+j+"&"+i+a+" "+j+b);
                 }
               }
             }
@@ -240,19 +284,37 @@ class Grid {
             for (int a=-1; a<1; a++) {
               for (int b=-1; b<1; b++) {
                 if (cells[i+a][j+b].isAlive()) {
+                  if (cells[i][j].isAlive()) {
+                    col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                  } else {
+                    if (red(col)+green(col)+blue(col) == 0) {
+                      col = cells[i+a][j+b].col;
+                    } else {
+                      col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                    }
+                  }
                   countLiveCell++;
-                  println("count "+i+" "+j+"&"+i+a+" "+j+b);
+                  //println("count "+i+" "+j+"&"+i+a+" "+j+b);
                 }
               }
             }
           }
           //left most cells
-          else if (i == 0) {
+          else if (i == 0 && j!= 0) {
             for (int a=0; a<2; a++) {
               for (int b=-1; b<2; b++) {
                 if (cells[i+a][j+b].isAlive()) {
+                  if (cells[i][j].isAlive()) {
+                    col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                  } else {
+                    if (red(col)+green(col)+blue(col) == 0) {
+                      col = cells[i+a][j+b].col;
+                    } else {
+                      col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                    }
+                  }
                   countLiveCell++;
-                  println("count "+i+" "+j+"&"+i+a+" "+j+b);
+                  //println("count "+i+" "+j+"&"+i+a+" "+j+b);
                 }
               }
             }
@@ -262,8 +324,17 @@ class Grid {
             for (int a=-1; a<1; a++) {
               for (int b=-1; b<2; b++) {
                 if (cells[i+a][j+b].isAlive()) {
+                  if (cells[i][j].isAlive()) {
+                    col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                  } else {
+                    if (red(col)+green(col)+blue(col) == 0) {
+                      col = cells[i+a][j+b].col;
+                    } else {
+                      col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                    }
+                  }
                   countLiveCell++;
-                  println("count "+i+" "+j+"&"+i+a+" "+j+b);
+                  //println("count "+i+" "+j+"&"+i+a+" "+j+b);
                 }
               }
             }
@@ -273,8 +344,17 @@ class Grid {
             for (int a=-1; a<2; a++) {
               for (int b=0; b<2; b++) {
                 if (cells[i+ a][j+b].isAlive()) {
+                  if (cells[i][j].isAlive()) {
+                    col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                  } else {
+                    if (red(col)+green(col)+blue(col) == 0) {
+                      col = cells[i+a][j+b].col;
+                    } else {
+                      col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                    }
+                  }
                   countLiveCell++;
-                  println("count "+i+" "+j+"&"+i+a+" "+j+b);
+                  //println("count "+i+" "+j+"&"+i+a+" "+j+b);
                 }
               }
             }
@@ -284,14 +364,24 @@ class Grid {
             for (int a=-1; a<2; a++) {
               for (int b=-1; b<1; b++) {
                 if (cells[i+a][j+b].isAlive()) {
+                  if (cells[i][j].isAlive()) {
+                    col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                  } else {
+                    if (red(col)+green(col)+blue(col) == 0) {
+                      col = cells[i+a][j+b].col;
+                    } else {
+                      col = color((red(col)+red(cells[i+a][j+b].col))/2, (green(col)+green(cells[i+a][j+b].col))/2, (blue(col)+blue(cells[i+a][j+b].col))/2);
+                    }
+                  }
                   countLiveCell++;
-                  println("count "+i+" "+j+"&"+i+a+" "+j+b);
+                  //println("count "+i+" "+j+"&"+i+a+" "+j+b);
                 }
               }
             }
           }
         }
         cells[i][j].liveNeighbor = countLiveCell;
+        cells[i][j].col = col;
       }
     }
 
@@ -301,15 +391,17 @@ class Grid {
 
         if (cells[i][j].isAlive()) {
           cells[i][j].liveNeighbor -=1; //remove one for liveCell because added self while counting surrounding cells
-          println(cells[i][j].liveNeighbor);
+          //println(cells[i][j].liveNeighbor);
           if (cells[i][j].liveNeighbor<2 || cells[i][j].liveNeighbor>3) {
             cells[i][j] = new DeadCell(i*cellSize, j*cellSize, cellSize);
           } else {
-            cells[i][j] = new LiveCell(i*cellSize, j*cellSize, cellSize);
+            color col = cells[i][j].col;
+            cells[i][j] = new LiveCell(i*cellSize, j*cellSize, cellSize, col);
           }
         } else {
           if (cells[i][j].liveNeighbor ==3) {
-            cells[i][j] = new LiveCell(i*cellSize, j*cellSize, cellSize);
+            color col = cells[i][j].col;
+            cells[i][j] = new LiveCell(i*cellSize, j*cellSize, cellSize, col);
           } else {
             cells[i][j] = new DeadCell(i*cellSize, j*cellSize, cellSize);
           }
@@ -331,11 +423,11 @@ class Grid {
       stroke(255);
       strokeWeight(0.3);
       //horizontal line
-      for (int j=0; j<height_cellNum; j++) {
+      for (int j=0; j<height_cellNum+1; j++) {
         line(0, j*cellSize, width, j*cellSize);
       }
       //vertical line
-      for (int i=0; i<width_cellNum; i++) {
+      for (int i=0; i<width_cellNum+1; i++) {
         line(i*cellSize, 0, i*cellSize, height);
       }
     }
@@ -347,12 +439,14 @@ abstract class Cell {
   float cellSize;
   boolean isAlive;
   int liveNeighbor;
+  color col;
 
-  Cell(float x, float y, float cellSize) {
+  Cell(float x, float y, float cellSize, color col) {
     this.x=x;
     this.y=y;
     this.cellSize= cellSize;
     liveNeighbor = 0;
+    this.col = col;
   }
 
   Cell (Cell other) {
@@ -360,6 +454,7 @@ abstract class Cell {
     y=other.y;
     cellSize= other.cellSize;
     isAlive=other.isAlive;
+    col = other.col;
   }
 
   boolean isAlive() {
@@ -379,10 +474,10 @@ abstract class Cell {
 
 
 class LiveCell extends Cell {
-  color ranCol;
 
-  LiveCell(float x, float y, float cellSize) {
-    super(x, y, cellSize);
+
+  LiveCell(float x, float y, float cellSize, color col) {
+    super(x, y, cellSize, col);
     super.isAlive = true;
   }
 
@@ -392,7 +487,7 @@ class LiveCell extends Cell {
 
   void draw() {
     //ranCol = color(random(0, 255), random(0, 255), random(0, 255));
-    fill(0, 0, 225);
+    fill(super.col);
     noStroke();
     rect(super.x, super.y, super.cellSize, super.cellSize);
   }
@@ -401,7 +496,7 @@ class LiveCell extends Cell {
 class DeadCell extends Cell {
 
   DeadCell(float x, float y, float cellSize) {
-    super(x, y, cellSize);
+    super(x, y, cellSize, color(0, 0, 0));
     super.isAlive = false;
   }
 
@@ -410,7 +505,7 @@ class DeadCell extends Cell {
   }
 
   void draw() {
-    fill(0);
+    fill(super.col);
     noStroke();
     rect(super.x, super.y, super.cellSize, super.cellSize);
   }
@@ -420,87 +515,47 @@ class DeadCell extends Cell {
 public boolean surfaceTouchEvent(MotionEvent event) {
 
   if (event.getActionMasked() == 5 && event.getActionIndex()==4) {
+    
     print("Secondary pointer detected: ACTION_POINTER_DOWN");
     print("Action index: " +str(event.getActionIndex()));
     if (game.mode == Mode.EDIT ) {
       game.mode = Mode.START;
     } else if (game.mode == Mode.START) {
       game.mode = Mode.EDIT;
-      
     }
+    delay(100);
+    return super.surfaceTouchEvent(event);
   }
-
-
-  return super.surfaceTouchEvent(event);
+  println("mask"+event.getActionMasked());
+  println("index"+event.getActionIndex());
+  if (event.getActionMasked() == 5 && event.getActionIndex() ==1) {
+    mousedragged = false;
+  } 
+  if (event.getActionMasked() == 6) {
+    delay(100);
+    mousedragged = true;
+  } 
+  
+  super.surfaceTouchEvent(event);
+  return gesture.surfaceTouchEvent(event);
 }
 
 
-public class ShakeActivity extends Activity implements SensorEventListener {
- 
-    private long lastTime;
-    private float speed;
-    private float lastX;
-    private float lastY;
-    private float lastZ;
-    private float x, y, z;
- 
-    private static final int SHAKE_THRESHOLD = 800;
-    private static final int DATA_X = SensorManager.DATA_X;
-    private static final int DATA_Y = SensorManager.DATA_Y;
-    private static final int DATA_Z = SensorManager.DATA_Z;
- 
-    private SensorManager sensorManager;
-    private Sensor accelerormeterSensor;
- 
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        accelerormeterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+void onAccelerometerEvent(float x, float y, float z)
+{
+  long currentTime = System.currentTimeMillis();
+  long gabOfTime = (currentTime - lastTime);
+  if (gabOfTime > 100) {
+    lastTime = currentTime;
+
+    speed = Math.abs(x + y + z - lastX - lastY - lastZ) / gabOfTime * 10000;
+
+    if (speed > SHAKE_THRESHOLD) {
+      game.reset();
     }
- 
-    
-    public void onStart() {
-        super.onStart();
-        if (accelerormeterSensor != null)
-            sensorManager.registerListener(this, accelerormeterSensor,
-            SensorManager.SENSOR_DELAY_GAME);
-    }
- 
-    
-    public void onStop() {
-        super.onStop();
-        if (sensorManager != null)
-            sensorManager.unregisterListener(this);
-    }
- 
-    
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
- 
-    }
- 
-    
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            long currentTime = System.currentTimeMillis();
-            long gabOfTime = (currentTime - lastTime);
-            if (gabOfTime > 100) {
-                lastTime = currentTime;
-                x = event.values[SensorManager.DATA_X];
-                y = event.values[SensorManager.DATA_Y];
-                z = event.values[SensorManager.DATA_Z];
- 
-                speed = Math.abs(x + y + z - lastX - lastY - lastZ) / gabOfTime * 10000;
- 
-                if (speed > SHAKE_THRESHOLD) {
-                   
-                }
- 
-                lastX = event.values[DATA_X];
-                lastY = event.values[DATA_Y];
-                lastZ = event.values[DATA_Z];
-            }
- 
-        }
- 
-    }
+
+    lastX = x;
+    lastY = y;
+    lastZ = z;
+  }
 }
