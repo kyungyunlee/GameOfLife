@@ -1,0 +1,6 @@
+# view res/layout/main.xml #generated:1
+-keep class .hw6 { <init>(...); }
+
+# view AndroidManifest.xml #generated:1
+-keep class processing.test.hw6.MainActivity { <init>(...); }
+
