@@ -1,0 +1,3 @@
+Additional feature : User’s can make live cell in random color. Whenever user touches screen, the color that will be used in making live cell is changed. And if game starts, the color of live cell in next generation is gonna be an average color of the live cell in neighborhood. 
+
+URL of GIT repository : https://github.com/kyungyunlee/GameOfLife.git
